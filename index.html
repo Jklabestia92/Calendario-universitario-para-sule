@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Diario universitario</title>
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--text:#1c2430;--muted:#6b7686;--line:#e3e7ed;--accent:#3b6fd4;--accent-t:#fff;--danger:#c0392b;--hl:rgba(255,214,0,.5);color-scheme:light;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12161c;--card:#1b212a;--text:#e8ecf1;--muted:#9aa5b4;--line:#2b3340;--accent:#6c9bff;--accent-t:#0c1424;--danger:#ff7a6b;--hl:rgba(255,214,0,.35);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#12161c;--card:#1b212a;--text:#e8ecf1;--muted:#9aa5b4;--line:#2b3340;--accent:#6c9bff;--accent-t:#0c1424;--danger:#ff7a6b;--hl:rgba(255,214,0,.35);color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.4}
+main{max-width:560px;margin:0 auto;padding:14px}
+h1{font-size:1.3rem;margin:6px 0 12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:14px}
+button{font:inherit;color:var(--text);cursor:pointer;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:8px 12px}
+.nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.nav strong{text-transform:capitalize;font-size:1.05rem}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.dow{font-size:.72rem;color:var(--muted);text-align:center;padding:2px 0}
+.day{aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-radius:10px;border:1px solid transparent;background:var(--bg);font-size:.95rem;padding:0}
+.day.out{visibility:hidden}
+.day.today{border-color:var(--accent);font-weight:700}
+.day.sel{background:var(--accent);color:var(--accent-t)}
+.dots{display:flex;gap:2px;height:6px}
+.dots i{width:6px;height:6px;border-radius:50%;display:block}
+.day.sel .dots i{box-shadow:0 0 0 1px var(--accent-t)}
+h2{font-size:1rem;margin:0 0 10px;text-transform:capitalize}
+.note{border-left:6px solid var(--c);background:color-mix(in srgb,var(--c) 16%,var(--card));border-radius:10px;padding:10px 12px;margin-bottom:10px}
+.note .subj{font-size:.75rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+.note .txt,#txt{white-space:pre-wrap;word-wrap:break-word}
+.note .acts{display:flex;gap:6px;margin-top:8px}
+.note .acts button{padding:4px 10px;font-size:.8rem}
+.note .acts .del{color:var(--danger)}
+.empty{color:var(--muted);text-align:center;padding:6px 0 12px}
+label{display:block;font-size:.78rem;color:var(--muted);margin:10px 0 4px}
+input[type=text],textarea{width:100%;font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px}
+textarea{min-height:96px;resize:vertical}
+.tools{display:flex;flex-wrap:wrap;gap:6px}
+.tools button{min-width:42px}
+.tools button.on{background:var(--accent);color:var(--accent-t);border-color:var(--accent)}
+.sw{display:flex;gap:10px;flex-wrap:wrap}
+.sw button{width:34px;height:34px;padding:0;border-radius:50%;background:var(--c);border:3px solid transparent}
+.sw button.on{border-color:var(--text)}
+.save{width:100%;margin-top:12px;background:var(--accent);color:var(--accent-t);border-color:var(--accent);font-weight:600;padding:12px}
+.cancel{width:100%;margin-top:8px}
+</style>
+</head>
+<body>
+<main>
+  <h1>🎓 Mi diario universitario</h1>
+
+  <div class="card">
+    <div class="nav">
+      <button id="prev" aria-label="Mes anterior">‹</button>
+      <strong id="mes"></strong>
+      <button id="next" aria-label="Mes siguiente">›</button>
+    </div>
+    <div class="grid" id="cal"></div>
+    <div style="text-align:center;margin-top:8px"><button id="hoy">Ir a hoy</button></div>
+  </div>
+
+  <div class="card">
+    <h2 id="dia"></h2>
+    <div id="notas"></div>
+  </div>
+
+  <div class="card">
+    <h2 id="ftitle">Nueva nota</h2>
+    <label for="subj">Asignatura (opcional)</label>
+    <input type="text" id="subj" placeholder="Ej.: Cálculo, Historia…">
+    <label for="txt">Nota</label>
+    <textarea id="txt" placeholder="Apunta clases, exámenes, entregas, ideas…"></textarea>
+    <label>Énfasis</label>
+    <div class="tools" id="tools">
+      <button data-f="b"><b>N</b></button>
+      <button data-f="i"><i>K</i></button>
+      <button data-f="u"><u>S</u></button>
+      <button data-f="h">🖍 Resaltar</button>
+      <button data-f="s">⭐ Importante</button>
+    </div>
+    <label>Color</label>
+    <div class="sw" id="sw"></div>
+    <button class="save" id="save">Guardar nota</button>
+    <button class="cancel" id="cancel" hidden>Cancelar edición</button>
+  </div>
+</main>
+
+<script>
+var KEY = "uni-diario:v1";
+var COLORS = ["#3b82f6", "#22a06b", "#e6b800", "#e5484d", "#8e5de8", "#f2800d"];
+var NAMES = ["Azul", "Verde", "Amarillo", "Rojo", "Morado", "Naranja"];
+var mem = { notes: [] };
+function load() {
+  try { var r = localStorage.getItem(KEY); if (r) mem = JSON.parse(r); } catch (e) {}
+  if (!mem || !Array.isArray(mem.notes)) mem = { notes: [] };
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(mem)); } catch (e) {} }
+
+var $ = function (id) { return document.getElementById(id); };
+function pad(n) { return String(n).padStart(2, "0"); }
+function key(y, m, d) { return y + "-" + pad(m + 1) + "-" + pad(d); }
+var now = new Date();
+var todayKey = key(now.getFullYear(), now.getMonth(), now.getDate());
+var view = { y: now.getFullYear(), m: now.getMonth() };
+var sel = todayKey;
+var editing = null;
+var draft = { color: COLORS[0], b: 0, i: 0, u: 0, h: 0, s: 0 };
+
+function styleNode(n, o) {
+  n.style.fontWeight = o.b ? "700" : "400";
+  n.style.fontStyle = o.i ? "italic" : "normal";
+  n.style.textDecoration = o.u ? "underline" : "none";
+  n.style.background = o.h ? "var(--hl)" : "";
+  if (n.tagName === "TEXTAREA") n.style.background = o.h ? "var(--hl)" : "var(--bg)";
+}
+
+function renderCal() {
+  $("mes").textContent = new Date(view.y, view.m, 1).toLocaleDateString("es-ES", { month: "long", year: "numeric" });
+  var g = $("cal");
+  g.innerHTML = "";
+  ["L", "M", "X", "J", "V", "S", "D"].forEach(function (d) {
+    var e = document.createElement("div"); e.className = "dow"; e.textContent = d; g.appendChild(e);
+  });
+  var off = (new Date(view.y, view.m, 1).getDay() + 6) % 7;
+  var n = new Date(view.y, view.m + 1, 0).getDate();
+  for (var i = 0; i < off; i++) { var o = document.createElement("div"); o.className = "day out"; g.appendChild(o); }
+  for (var d = 1; d <= n; d++) {
+    var k = key(view.y, view.m, d);
+    var b = document.createElement("button");
+    b.className = "day" + (k === todayKey ? " today" : "") + (k === sel ? " sel" : "");
+    b.appendChild(document.createTextNode(d));
+    var dots = document.createElement("span"); dots.className = "dots";
+    var cs = [];
+    mem.notes.forEach(function (x) { if (x.date === k && cs.indexOf(x.color) < 0) cs.push(x.color); });
+    cs.slice(0, 4).forEach(function (c) { var t = document.createElement("i"); t.style.background = c; dots.appendChild(t); });
+    b.appendChild(dots);
+    b.onclick = (function (kk) { return function () { sel = kk; cancelEdit(); renderAll(); }; })(k);
+    g.appendChild(b);
+  }
+}
+
+function renderNotes() {
+  var p = sel.split("-");
+  $("dia").textContent = new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
+  var box = $("notas");
+  box.innerHTML = "";
+  var list = mem.notes.filter(function (x) { return x.date === sel; });
+  if (!list.length) {
+    var e = document.createElement("div"); e.className = "empty"; e.textContent = "Sin notas este día."; box.appendChild(e); return;
+  }
+  list.forEach(function (x) {
+    var d = document.createElement("div"); d.className = "note"; d.style.setProperty("--c", x.color);
+    if (x.subj) { var s = document.createElement("div"); s.className = "subj"; s.textContent = x.subj; d.appendChild(s); }
+    var t = document.createElement("div"); t.className = "txt";
+    var sp = document.createElement("span");
+    sp.textContent = (x.s ? "⭐ " : "") + x.text;
+    styleNode(sp, x);
+    t.appendChild(sp); d.appendChild(t);
+    var a = document.createElement("div"); a.className = "acts";
+    var be = document.createElement("button"); be.textContent = "Editar";
+    be.onclick = function () { startEdit(x); };
+    var bd = document.createElement("button"); bd.className = "del"; bd.textContent = "Borrar";
+    bd.onclick = function () {
+      if (!confirm("¿Borrar esta nota?")) return;
+      mem.notes = mem.notes.filter(function (y) { return y.id !== x.id; });
+      if (editing === x.id) cancelEdit();
+      save(); renderAll();
+    };
+    a.appendChild(be); a.appendChild(bd); d.appendChild(a);
+    box.appendChild(d);
+  });
+}
+
+function renderForm() {
+  Array.prototype.forEach.call($("tools").children, function (b) { b.classList.toggle("on", !!draft[b.getAttribute("data-f")]); });
+  Array.prototype.forEach.call($("sw").children, function (b) { b.classList.toggle("on", b.getAttribute("data-c") === draft.color); });
+  styleNode($("txt"), draft);
+  $("ftitle").textContent = editing ? "Editar nota" : "Nueva nota";
+  $("cancel").hidden = !editing;
+}
+function renderAll() { renderCal(); renderNotes(); renderForm(); }
+
+function startEdit(x) {
+  editing = x.id; sel = x.date;
+  $("subj").value = x.subj || ""; $("txt").value = x.text;
+  draft = { color: x.color, b: x.b, i: x.i, u: x.u, h: x.h, s: x.s };
+  renderForm(); $("txt").focus(); $("ftitle").scrollIntoView({ behavior: "smooth" });
+}
+function cancelEdit() {
+  editing = null; $("subj").value = ""; $("txt").value = "";
+  draft = { color: draft.color, b: 0, i: 0, u: 0, h: 0, s: 0 };
+  renderForm();
+}
+
+COLORS.forEach(function (c, i) {
+  var b = document.createElement("button");
+  b.setAttribute("data-c", c); b.style.setProperty("--c", c); b.setAttribute("aria-label", NAMES[i]);
+  b.onclick = function () { draft.color = c; renderForm(); };
+  $("sw").appendChild(b);
+});
+$("tools").addEventListener("click", function (ev) {
+  var f = ev.target.closest("button"); if (!f) return;
+  var k = f.getAttribute("data-f"); draft[k] = draft[k] ? 0 : 1; renderForm();
+});
+$("save").onclick = function () {
+  var text = $("txt").value.trim();
+  if (!text) { alert("Escribe algo en la nota."); return; }
+  var data = { date: sel, subj: $("subj").value.trim(), text: text, color: draft.color, b: draft.b, i: draft.i, u: draft.u, h: draft.h, s: draft.s };
+  if (editing) {
+    mem.notes = mem.notes.map(function (x) { return x.id === editing ? Object.assign({ id: x.id }, data) : x; });
+  } else {
+    data.id = Date.now() + Math.random(); mem.notes.push(data);
+  }
+  save(); cancelEdit(); renderAll();
+};
+$("cancel").onclick = cancelEdit;
+$("prev").onclick = function () { view.m--; if (view.m < 0) { view.m = 11; view.y--; } renderCal(); };
+$("next").onclick = function () { view.m++; if (view.m > 11) { view.m = 0; view.y++; } renderCal(); };
+$("hoy").onclick = function () { view = { y: now.getFullYear(), m: now.getMonth() }; sel = todayKey; cancelEdit(); renderAll(); };
+
+load();
+renderAll();
+</script>
+</body>
+</html>
